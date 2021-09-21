@@ -15,19 +15,25 @@ class node:
         self.classification = None
 
 def main():
-    #args = sys.argv[1:]
-    #if len(args) > 2 or len(args) < 2:
-        #print("Invalid number of arguments specified")
-        #return
+    args = sys.argv[1:]
+    if len(args) > 2 or len(args) < 2:
+        print("Invalid number of arguments specified")
+        return
     totalZeros = 0
     totalOnes = 0
     totalTwos = 0
-    trainingData = open("train.dat", "r")
+    trainingData = open(args[0], "r")
+    fileName = args[0]
+    print(fileName)
     getAttributes = 0
     numberOfAttributes = 0
     attributesRemaining = list()
+    attributes = list()
     for line in trainingData:
         arr = line.split()
+        if (arr[0] != "0" and arr[0] != "1" and arr[0] != "2"):
+            for word in arr:
+                attributes.append(word)
         if (arr[len(arr) - 1] == "0"):
             totalZeros+=1
         elif (arr[len(arr) - 1] == "1"):
@@ -37,11 +43,20 @@ def main():
         if (getAttributes == 0):
             numberOfAttributes = len(line.split()) - 1
             getAttributes+=1
-        
+    mostFrequent = max([totalZeros, totalOnes, totalTwos])
+    frequent = ""
+    if (mostFrequent == totalZeros):
+        frequent = "0"
+    elif (mostFrequent == totalOnes):
+        frequent = "1"
+    else:
+        frequent = "2"
+    print(frequent)
+    print(attributes)
     for i in range(0, numberOfAttributes):
         attributesRemaining.append(i)
     parentNode = node(totalZeros,totalOnes,totalTwos, totalZeros + totalOnes + totalTwos)
-    learningAlgorithm(attributesRemaining=attributesRemaining, trainingData=trainingData, parentNode=parentNode)
+    learningAlgorithm(attributesRemaining=attributesRemaining, fileName=fileName, parentNode=parentNode, frequent=frequent, attributes=attributes)
 
 def calculateEntropy(currentNode):
     zeros = currentNode.zeros
@@ -57,20 +72,22 @@ def calculateEntropy(currentNode):
         entropy += (-twos/total)*math.log((twos/total),2)
     return entropy
 
-def learningAlgorithm(attributesRemaining, trainingData, parentNode):
-    recursiveLearningAlgorithm(currentNode=parentNode, attributesRemaining=attributesRemaining)
-    treeOutput(currentNode=parentNode, index=-1, spaces=-1)
+def learningAlgorithm(attributesRemaining,fileName, parentNode, frequent, attributes):
+    recursiveLearningAlgorithm(currentNode=parentNode, attributesRemaining=attributesRemaining, frequent=frequent, fileName=fileName)
+    treeOutput(currentNode=parentNode, index=-1, spaces=-1, attributes=attributes)
 
 
-def recursiveLearningAlgorithm(currentNode, attributesRemaining):
+def recursiveLearningAlgorithm(currentNode, attributesRemaining, frequent, fileName):
         entropyOfNode = calculateEntropy(currentNode=currentNode)
         if (entropyOfNode == 0 or len(attributesRemaining) == 0 or currentNode.total == 0):
             if (currentNode.zeros >= currentNode.ones and currentNode.zeros > currentNode.twos):
                 currentNode.classification = 0
             elif (currentNode.ones > currentNode.zeros and currentNode.ones >= currentNode.twos):
                 currentNode.classifcation = 1
-            else:
+            elif (currentNode.twos > currentNode.ones and currentNode.twos > currentNode.zeros):
                 currentNode.classification = 2
+            else:
+                currentNode.classification = frequent
             return
         maxLeftNode = node(0,0,0,0)
         maxMiddleNode = node(0,0,0,0)
@@ -78,7 +95,7 @@ def recursiveLearningAlgorithm(currentNode, attributesRemaining):
         index = 0
         maxGain = -1000000 
         for count in attributesRemaining:
-            trainingData = open("train.dat", "r")
+            trainingData = open(fileName, "r")
             leftNode = node(0,0,0,0)
             middleNode = node(0,0,0,0)
             rightNode = node(0,0,0,0)
@@ -149,58 +166,33 @@ def recursiveLearningAlgorithm(currentNode, attributesRemaining):
         currentNode.left = maxLeftNode
         currentNode.right = maxRightNode
         currentNode.middle = maxMiddleNode
-        print("going to left")
-        recursiveLearningAlgorithm(currentNode=currentNode.left, attributesRemaining=attributesRemaining.copy())
-        print("going to middle")
-        recursiveLearningAlgorithm(currentNode=currentNode.middle, attributesRemaining=attributesRemaining.copy())
-        print("going to right")
-        recursiveLearningAlgorithm(currentNode=currentNode.right, attributesRemaining=attributesRemaining.copy())
+        recursiveLearningAlgorithm(currentNode=currentNode.left, attributesRemaining=attributesRemaining.copy(), frequent=frequent, fileName=fileName)
+        recursiveLearningAlgorithm(currentNode=currentNode.middle, attributesRemaining=attributesRemaining.copy(), frequent=frequent, fileName=fileName)
+        recursiveLearningAlgorithm(currentNode=currentNode.right, attributesRemaining=attributesRemaining.copy(), frequent=frequent, fileName=fileName)
 
-def treeOutput(currentNode, index, spaces):
+def treeOutput(currentNode, index, spaces, attributes):
     if (currentNode == None or len(currentNode.attributes) <= index):
         return
     for i in range(spaces):
         print("| ", end="")
 
-    if (currentNode.attributes[index] == 0):
+    if (attributes[currentNode.attributes[index]] in attributes):
+        num = currentNode.attributes[index]
         if (currentNode.left == None and currentNode.middle == None and currentNode.right == None):
-            print("wesley", "=", currentNode.ids[index], ": ", end="")
+            print(attributes[num], "=", currentNode.ids[index], ": ", end="")
         else :
-            print("wesley", "=", currentNode.ids[index], ":")
-    if (currentNode.attributes[index] == 1):
-        if (currentNode.left == None and currentNode.middle == None and currentNode.right == None):
-            print("romulan", "=", currentNode.ids[index], ": ", end="")
-        else :
-            print("romulan", "=", currentNode.ids[index], ":")
-    if (currentNode.attributes[index] == 2):
-        if (currentNode.left == None and currentNode.middle == None and currentNode.right == None):
-            print("poetry", "=", currentNode.ids[index], ": ", end="")
-        else :
-            print("poetry", "=", currentNode.ids[index], ":")
-    if (currentNode.attributes[index] == 3):
-        if (currentNode.left == None and currentNode.middle == None and currentNode.right == None):
-            print("honor", "=", currentNode.ids[index], ": ", end="")
-        else :
-            print("honor", "=", currentNode.ids[index], ":")
-    if (currentNode.attributes[index] == 4):
-        if (currentNode.left == None and currentNode.middle == None and currentNode.right == None):
-            print("tea", "=", currentNode.ids[index], ": ", end="")
-        else :
-            print("tea", "=", currentNode.ids[index], ":")
-    if (currentNode.attributes[index] == 5):
-        if (currentNode.left == None and currentNode.middle == None and currentNode.right == None):
-            print("barclay", "=", currentNode.ids[index], ": ", end="")
-        else :
-            print("barclay", "=", currentNode.ids[index], ":")
+            print(attributes[num], "=", currentNode.ids[index], ":")
     
     if (currentNode.left == None and currentNode.middle == None and currentNode.right == None):
+        if (currentNode.classification == None):
+            currentNode.classification = 1
         print(currentNode.classification)
 
     
 
-    treeOutput(currentNode=currentNode.left, index=index+1, spaces=spaces+1)
-    treeOutput(currentNode=currentNode.middle, index=index+1, spaces=spaces+1)
-    treeOutput(currentNode=currentNode.right, index=index+1, spaces=spaces+1)
+    treeOutput(currentNode=currentNode.left, index=index+1, spaces=spaces+1, attributes=attributes)
+    treeOutput(currentNode=currentNode.middle, index=index+1, spaces=spaces+1, attributes=attributes)
+    treeOutput(currentNode=currentNode.right, index=index+1, spaces=spaces+1, attributes=attributes)
 
 
 main()
