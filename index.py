@@ -13,18 +13,25 @@ class node:
         self.attributes = list()
         self.ids = list()
         self.classification = None
+    
+trainClasses = list()
+trainIdList =  list()
+testClasses = list()
+tempList = list()
+idsList = list()
 
 def main():
     args = sys.argv[1:]
     if len(args) > 2 or len(args) < 2:
         print("Invalid number of arguments specified")
         return
+    fileName = "train.dat"
     totalZeros = 0
     totalOnes = 0
     totalTwos = 0
-    trainingData = open(args[0], "r")
+    trainingData = open(fileName, "r")
     fileName = args[0]
-    print(fileName)
+    testFileName = args[1]
     getAttributes = 0
     numberOfAttributes = 0
     attributesRemaining = list()
@@ -43,20 +50,62 @@ def main():
         if (getAttributes == 0):
             numberOfAttributes = len(line.split()) - 1
             getAttributes+=1
+        temp = list()
+        for num in arr:
+            temp.append(num)
+        trainClasses.append(temp.copy())
+    
     mostFrequent = max([totalZeros, totalOnes, totalTwos])
     frequent = ""
     if (mostFrequent == totalZeros):
-        frequent = "0"
+        frequent = 0
     elif (mostFrequent == totalOnes):
-        frequent = "1"
+        frequent = 1
     else:
-        frequent = "2"
-    print(frequent)
-    print(attributes)
+        frequent = 2
     for i in range(0, numberOfAttributes):
         attributesRemaining.append(i)
     parentNode = node(totalZeros,totalOnes,totalTwos, totalZeros + totalOnes + totalTwos)
     learningAlgorithm(attributesRemaining=attributesRemaining, fileName=fileName, parentNode=parentNode, frequent=frequent, attributes=attributes)
+    res1 = calculateAccuracy(fileName=fileName)
+    res2 = calculateAccuracy(fileName=testFileName)
+    print("Accuracy on training set (",res1[1]," instances): ", round(res1[0] / res1[1] * 100,1),"%")
+    print("Accuracy on training set (",res2[1]," instances): ", round(res2[0] / res2[1] * 100,1),"%")
+
+
+def calculateAccuracy(fileName):
+    testData = open(fileName,"r")
+    correct = 0
+    amt = 0
+    for line in testData:
+        arr = line.split()
+        for j in range(len(tempList)):
+            instance = tempList[j]
+            ids = idsList[j]
+            foundInstance = False
+            for i in range(len(instance) -1):
+                temp1 = arr[instance[i]]
+                temp2 = str(ids[i])
+                t = len(instance) - 2
+                if (temp1 != temp2):
+                    break
+                if (i == t and temp1 == temp2):
+                    foundInstance = True
+                    break
+            if (foundInstance):
+                classNum = arr[len(arr) -1]
+                testClass = str(instance[len(instance)-1])
+                if (testClass == classNum):
+                    correct += 1
+                amt += 1
+                
+
+    result = (correct / amt) * 100
+    return [correct, amt]
+    round(result, 1)
+    
+
+
 
 def calculateEntropy(currentNode):
     zeros = currentNode.zeros
@@ -136,9 +185,6 @@ def recursiveLearningAlgorithm(currentNode, attributesRemaining, frequent, fileN
             leftNode.total = leftNode.zeros + leftNode.ones + leftNode.twos
             rightNode.total = rightNode.zeros + rightNode.ones + rightNode.twos
             middleNode.total = middleNode.zeros + middleNode.ones + middleNode.twos
-            #leftNode.ids.append("0")
-            #middleNode.ids.append("1")
-            #rightNode.ids.append("2")
             entropyOfLeft = calculateEntropy(leftNode) * (leftNode.total / currentNode.total)
             entropyOfMiddle = calculateEntropy(middleNode) * (middleNode.total / currentNode.total) 
             entropyOfRight = calculateEntropy(rightNode) * (rightNode.total / currentNode.total) 
@@ -182,10 +228,14 @@ def treeOutput(currentNode, index, spaces, attributes):
             print(attributes[num], "=", currentNode.ids[index], ": ", end="")
         else :
             print(attributes[num], "=", currentNode.ids[index], ":")
-    
     if (currentNode.left == None and currentNode.middle == None and currentNode.right == None):
         if (currentNode.classification == None):
             currentNode.classification = 1
+        temp = currentNode.attributes.copy()
+        temp2 = currentNode.ids.copy()
+        idsList.append(temp2)
+        temp.append(currentNode.classification)
+        tempList.append(temp)
         print(currentNode.classification)
 
     
@@ -193,6 +243,5 @@ def treeOutput(currentNode, index, spaces, attributes):
     treeOutput(currentNode=currentNode.left, index=index+1, spaces=spaces+1, attributes=attributes)
     treeOutput(currentNode=currentNode.middle, index=index+1, spaces=spaces+1, attributes=attributes)
     treeOutput(currentNode=currentNode.right, index=index+1, spaces=spaces+1, attributes=attributes)
-
 
 main()
